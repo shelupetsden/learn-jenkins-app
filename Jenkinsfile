@@ -104,8 +104,15 @@ pipeline {
 						 echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
 						 node_modules/.bin/netlify status
 						 node_modules/.bin/netlify deploy --dir=build --site "$NETLIFY_SITE_ID" --json > deploy-response.json
-						 node_modules/.bin/node-jq -r '.deploy_url' deploy-response.json
 						'''
+
+				script {
+					env.STAGING_DEPLOY_URL = sh(
+						script: "node_modules/.bin/node-jq -r '.deploy_url' deploy-response.json",
+						returnStdout: true
+					).trim()
+					echo "Staging deploy URL: ${env.STAGING_DEPLOY_URL}"
+				}
 			}
 		}
 
@@ -118,20 +125,16 @@ pipeline {
 				}
 			}
 
-			environment {
-				CI_ENVIRONMENT_URL = 'https://learn-jenkins-cicd.netlify.app'
-			}
-
 			steps {
 				sh '''
-						npx playwright test --reporter=html
-						echo $CI_ENVIRONMENT_URL
-					'''
+    				echo "Using staging URL: $STAGING_DEPLOY_URL"
+    				CI_ENVIRONMENT_URL="$STAGING_DEPLOY_URL" npx playwright test --reporter=html
+  				'''
 			}
 
 			post {
 				always {
-					publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Prod HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+					publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, icon: '', keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Staging HTML Report', reportTitles: '', useWrapperFileDirectly: true])
 				}
 			}
 		}
@@ -180,8 +183,8 @@ pipeline {
 
 			steps {
 				sh '''
+						echo "Using prod URL: $CI_ENVIRONMENT_URL"
 						npx playwright test --reporter=html
-						echo $CI_ENVIRONMENT_URL
 					'''
 			}
 
