@@ -149,27 +149,8 @@ pipeline {
 
 		}
 
-		stage('Deploy prod') {
-			agent {
-				docker {
-					image 'node:18-alpine'
-					reuseNode true
-				}
-			}
 
-			steps {
-				sh '''
-						 npm install netlify-cli@20.1.1
-						 node_modules/.bin/netlify --version
-						 echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-						 node_modules/.bin/netlify status
-						 node_modules/.bin/netlify deploy --dir=build --prod --site "$NETLIFY_SITE_ID"
-						'''
-			}
-		}
-
-
-		stage('Prod E2E') {
+		stage('Deploy Prod') {
 			agent {
 				docker {
 					image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
@@ -184,6 +165,22 @@ pipeline {
 			steps {
 				sh '''
 						echo "Using prod URL: $CI_ENVIRONMENT_URL"
+						npm install netlify-cli@20.1.1
+						node_modules/.bin/netlify --version
+
+						echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
+						node_modules/.bin/netlify status
+						node_modules/.bin/netlify deploy --dir=build --prod --site "$NETLIFY_SITE_ID"
+
+						echo "Waiting for prod to be reachable: $CI_ENVIRONMENT_URL"
+    					for i in $(seq 1 30); do
+    					if curl -fsS "$CI_ENVIRONMENT_URL" >/dev/null; then echo "Prod is reachable."
+    					break
+    					fi
+      					echo "Not ready yet... attempt $i/30"
+      					sleep 5
+    					done
+
 						npx playwright test --reporter=html
 					'''
 			}
