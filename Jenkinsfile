@@ -92,19 +92,20 @@ pipeline {
 		stage('Deploy staging') {
 			agent {
 				docker {
-					image 'node:18-alpine'
+					image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
 					reuseNode true
 				}
 			}
 
 			steps {
 				sh '''
-						 npm install netlify-cli@20.1.1 node-jq
-						 node_modules/.bin/netlify --version
-						 echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-						 node_modules/.bin/netlify status
-						 node_modules/.bin/netlify deploy --dir=build --site "$NETLIFY_SITE_ID" --json > deploy-response.json
-						'''
+					#deploy
+    				 npm install netlify-cli@20.1.1 node-jq
+					 node_modules/.bin/netlify --version
+					 echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
+					 node_modules/.bin/netlify status
+					 node_modules/.bin/netlify deploy --dir=build --site "$NETLIFY_SITE_ID" --json > deploy-response.json
+				'''
 
 				script {
 					env.STAGING_DEPLOY_URL = sh(
@@ -113,21 +114,20 @@ pipeline {
 					).trim()
 					echo "Staging deploy URL: ${env.STAGING_DEPLOY_URL}"
 				}
-			}
-		}
 
-
-		stage('Staging E2E') {
-			agent {
-				docker {
-					image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
-					reuseNode true
-				}
-			}
-
-			steps {
 				sh '''
-    				echo "Using staging URL: $STAGING_DEPLOY_URL"
+					#wait after deploy
+					echo "Waiting for staging to be reachable: $STAGING_DEPLOY_URL"
+    				for i in $(seq 1 30); do
+    				if curl -fsS "$STAGING_DEPLOY_URL" >/dev/null; then echo "Stage is reachable."
+    				break
+    				fi
+      				echo "Not ready yet... attempt $i/30"
+      				sleep 5
+    				done
+
+					#E2E test
+					echo "Using staging URL: $STAGING_DEPLOY_URL"
     				CI_ENVIRONMENT_URL="$STAGING_DEPLOY_URL" npx playwright test --reporter=html
   				'''
 			}
@@ -165,13 +165,15 @@ pipeline {
 			steps {
 				sh '''
 						echo "Using prod URL: $CI_ENVIRONMENT_URL"
+
+						#deploy
 						npm install netlify-cli@20.1.1
 						node_modules/.bin/netlify --version
-
 						echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
 						node_modules/.bin/netlify status
 						node_modules/.bin/netlify deploy --dir=build --prod --site "$NETLIFY_SITE_ID"
 
+						#wait after deploy
 						echo "Waiting for prod to be reachable: $CI_ENVIRONMENT_URL"
     					for i in $(seq 1 30); do
     					if curl -fsS "$CI_ENVIRONMENT_URL" >/dev/null; then echo "Prod is reachable."
@@ -181,6 +183,7 @@ pipeline {
       					sleep 5
     					done
 
+						#E2E test
 						npx playwright test --reporter=html
 					'''
 			}
