@@ -4,6 +4,7 @@ pipeline {
 	environment {
 		NETLIFY_SITE_ID = '8b7288d3-b874-4b32-a1b6-e7762cb6153a'
 		NETLIFY_AUTH_TOKEN = credentials('netlify-token')
+		REACT_APP_VERSION = "1.0.$BUILD_ID"
 	}
 
 	stages {
@@ -112,7 +113,7 @@ pipeline {
 						script: "node_modules/.bin/node-jq -r '.deploy_url' deploy-response.json",
 						returnStdout: true
 					).trim()
-					echo "Staging deploy URL: ${env.STAGING_DEPLOY_URL}"
+					echo "Staging deploed URL: ${env.STAGING_DEPLOY_URL}"
 				}
 
 				sh '''
