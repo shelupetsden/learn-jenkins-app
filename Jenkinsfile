@@ -8,24 +8,6 @@ pipeline {
 	}
 
 	stages {
-		stage('AWS') {
-		    agent {
-		        docker {
-		        image 'amazon/aws-cli'
-		        args "--entrypoint=''"
-		        reuseNode true
-		        }
-		    }
-		    steps {
-                withCredentials([usernamePassword(credentialsId: 'my-aws-s3', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
-                     sh '''
-                    	   aws --version
-                    	   aws s3 ls
-                        '''
-                }
-		    }
-
-    	}
 
 		stage('Unit test') {
 			agent {
@@ -37,9 +19,9 @@ pipeline {
 
 			steps {
 				sh '''
-						test -f build/index.html
-						npm test
-					'''
+					  test -f build/index.html
+				      npm test
+				   '''
 
 			}
 
@@ -71,6 +53,30 @@ pipeline {
 				'''
 			}
 		}
+
+		stage('AWS') {
+        		    agent {
+        		        docker {
+        		        image 'amazon/aws-cli'
+        		        args "--entrypoint=''"
+        		        reuseNode true
+        		        }
+        		    }
+
+        		    environment {
+            		    AWS_S3_BUCKET = 'learn-jenkins-app-05012026'
+        		    }
+
+        		    steps {
+                        withCredentials([usernamePassword(credentialsId: 'my-aws-s3', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+                             sh '''
+                            	   aws --version
+                            	   aws s3 sync build s3://$AWS_S3_BUCKET
+                                '''
+                        }
+        		    }
+
+            	}
 
 
 		stage('Local E2E') {
