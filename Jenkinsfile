@@ -94,7 +94,7 @@ pipeline {
 
 				script {
 					env.STAGING_DEPLOY_URL = sh(
-						script: "node-jq -r '.deploy_url' deploy-response.json",
+						script: "jq -r '.deploy_url' deploy-response.json",
 						returnStdout: true
 					).trim()
 					echo "Staging deploed URL: ${env.STAGING_DEPLOY_URL}"
