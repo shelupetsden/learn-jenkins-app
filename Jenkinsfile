@@ -8,32 +8,6 @@ pipeline {
 	}
 
 	stages {
-	    stage('Docker') {
-	        steps {
-	            sh 'docker build -t my-playwright .'
-	        }
-	    }
-
-
-		stage('Install') {
-			agent {
-				docker {
-					image 'node:18-alpine'
-					reuseNode true
-				}
-			}
-
-			steps {
-				sh '''
-					ls -la
-					node --version
-					npm --version
-					npm ci
-					ls -la
-				'''
-			}
-		}
-
 		stage('Unit test') {
 			agent {
 				docker {
@@ -44,9 +18,9 @@ pipeline {
 
 			steps {
 				sh '''
-							test -f build/index.html
-							npm test
-						'''
+						test -f build/index.html
+						npm test
+					'''
 
 			}
 
@@ -68,6 +42,12 @@ pipeline {
 
 			steps {
 				sh '''
+				    ls -la
+                    node --version
+                    npm --version
+                    npm ci
+                    ls -la
+
 					npm run build
 				'''
 			}
