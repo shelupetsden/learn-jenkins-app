@@ -8,6 +8,13 @@ pipeline {
 	}
 
 	stages {
+	    stage('Docker') {
+	        steps {
+	            sh 'docker build -t my-playwright .'
+	        }
+	    }
+
+
 		stage('Install') {
 			agent {
 				docker {
@@ -70,7 +77,7 @@ pipeline {
 		stage('Local E2E') {
 			agent {
 				docker {
-					image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+					image 'my-playwright'
 					reuseNode true
 				}
 			}
@@ -93,7 +100,7 @@ pipeline {
 		stage('Deploy staging') {
 			agent {
 				docker {
-					image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+					image 'my-playwright'
 					reuseNode true
 				}
 			}
@@ -101,11 +108,10 @@ pipeline {
 			steps {
 				sh '''
 					#deploy
-    				 npm install netlify-cli@20.1.1 node-jq
-					 node_modules/.bin/netlify --version
+					 netlify --version
 					 echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
-					 node_modules/.bin/netlify status
-					 node_modules/.bin/netlify deploy --dir=build --site "$NETLIFY_SITE_ID" --json > deploy-response.json
+					 netlify status
+					 netlify deploy --dir=build --site "$NETLIFY_SITE_ID" --json > deploy-response.json
 				'''
 
 				script {
@@ -154,7 +160,7 @@ pipeline {
 		stage('Deploy Prod') {
 			agent {
 				docker {
-					image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
+					image 'my-playwright'
 					reuseNode true
 				}
 			}
@@ -168,11 +174,10 @@ pipeline {
 						echo "Using prod URL: $CI_ENVIRONMENT_URL"
 
 						#deploy
-						npm install netlify-cli@20.1.1
-						node_modules/.bin/netlify --version
+						netlify --version
 						echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-						node_modules/.bin/netlify status
-						node_modules/.bin/netlify deploy --dir=build --prod --site "$NETLIFY_SITE_ID"
+						netlify status
+						netlify deploy --dir=build --prod --site "$NETLIFY_SITE_ID"
 
 						#wait after deploy
 						echo "Waiting for prod to be reachable: $CI_ENVIRONMENT_URL"
