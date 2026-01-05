@@ -83,11 +83,9 @@ pipeline {
 			}
 			steps {
 				sh '''
-							npm install serve
-							node_modules/.bin/serve -s build &
-							sleep 10
-							npx playwright test --reporter=html
-						'''
+						serve -s build & sleep 10
+						npx playwright test --reporter=html
+					'''
 			}
 
 			post {
@@ -116,7 +114,7 @@ pipeline {
 
 				script {
 					env.STAGING_DEPLOY_URL = sh(
-						script: "node_modules/.bin/node-jq -r '.deploy_url' deploy-response.json",
+						script: "node-jq -r '.deploy_url' deploy-response.json",
 						returnStdout: true
 					).trim()
 					echo "Staging deploed URL: ${env.STAGING_DEPLOY_URL}"
@@ -146,21 +144,21 @@ pipeline {
 			}
 		}
 
-		stage('Approval') {
-			steps {
-				timeout(time: 15, unit: "HOURS") {
-					input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
-				}
-
-			}
-
-		}
-
+// 		stage('Approval') {
+// 			steps {
+// 				timeout(time: 15, unit: "HOURS") {
+// 					input message: 'Do you wish to deploy to production?', ok: 'Yes, I am sure!'
+// 				}
+//
+// 			}
+//
+// 		}
+//
 
 		stage('Deploy Prod') {
 			agent {
 				docker {
-					image 'my-playwright'
+					image 'mcr.microsoft.com/playwright:v1.39.0-jammy'
 					reuseNode true
 				}
 			}
