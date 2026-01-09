@@ -46,6 +46,11 @@ pipeline {
     	            sh '''
     	                docker build -t $AWS_ECR_DOCKER_URI/$APP_NAME:$REACT_APP_VERSION .
     	                aws ecr get-login-password | docker login --username AWS --password-stdin $AWS_ECR_DOCKER_URI
+
+    	                 docker pull 635928276728.dkr.ecr.eu-north-1.amazonaws.com/learnjenkinsapp:1.0.133
+                         docker inspect --format '{{.Os}}/{{.Architecture}}' 635928276728.dkr.ecr.eu-north-1.amazonaws.com/learnjenkinsapp:1.0.133
+
+
     	                docker push $AWS_ECR_DOCKER_URI/$APP_NAME:$REACT_APP_VERSION
     	            '''
     	        }
