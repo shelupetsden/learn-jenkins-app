@@ -1,3 +1,7 @@
-FROM amazon/aws-cli
-RUN amazon-linux-extras install docker
-RUN yum install jq -y
+# ci/Dockerfile-aws-cli
+FROM docker:27-cli AS dockercli
+
+FROM amazon/aws-cli:2.15.53
+RUN (yum -y install jq || dnf -y install jq) && (yum clean all || true)
+
+COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
